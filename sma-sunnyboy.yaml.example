@@ -109,4 +109,35 @@ text_sensor:
 binary_sensor:
   - platform: sma_bluetooth
     connected:
+      id: inverter_connected
       name: "Inverter Connected"
+
+# Built-in LED status:
+#   fast blink (5 Hz)  -> Wi-Fi not connected
+#   slow blink (1 Hz)  -> Wi-Fi connected, inverter Bluetooth not connected
+#   solid on           -> Wi-Fi and inverter both connected
+output:
+  - platform: gpio
+    id: status_led_out
+    pin:
+      number: GPIO2
+      ignore_strapping_warning: true
+
+interval:
+  - interval: 100ms
+    then:
+      - lambda: |-
+          static uint8_t tick = 0;
+          tick = (tick + 1) % 10;
+          bool on;
+          if (!wifi::global_wifi_component->is_connected()) {
+            on = (tick % 2) == 0;
+          } else if (!id(inverter_connected).state) {
+            on = tick < 5;
+          } else {
+            on = true;
+          }
+          if (on)
+            id(status_led_out).turn_on();
+          else
+            id(status_led_out).turn_off();

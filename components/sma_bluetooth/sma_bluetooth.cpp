@@ -469,6 +469,23 @@ void SmaBluetooth::on_disconnected_() {
     this->publish_offline_();
 }
 
+// Close the session cleanly before a reboot (OTA, restart); otherwise the inverter keeps the
+// stale link and refuses new connections for several minutes.
+void SmaBluetooth::on_shutdown() {
+  const uint32_t handle = this->spp_handle_;
+  if (handle == 0)
+    return;
+  if (this->state_ == State::READY || this->state_ == State::WAIT_REPLY) {
+    this->tx_queue_.clear();
+    this->tx_busy_ = false;
+    this->tx_congested_ = false;
+    this->send_logoff_();
+    delay(100);  // let the logoff go out before dropping the link
+  }
+  esp_spp_disconnect(handle);
+  delay(200);
+}
+
 void SmaBluetooth::update() {
   if (this->state_ == State::READY) {
     this->start_poll_cycle_();

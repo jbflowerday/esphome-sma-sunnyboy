@@ -75,6 +75,7 @@ class SmaBluetooth : public PollingComponent {
   void loop() override;
   void update() override;
   void dump_config() override;
+  void on_shutdown() override;
   float get_setup_priority() const override { return setup_priority::BLUETOOTH; }
 
  protected:

@@ -116,6 +116,7 @@ binary_sensor:
 #   fast blink (5 Hz)  -> Wi-Fi not connected
 #   slow blink (1 Hz)  -> Wi-Fi connected, inverter Bluetooth not connected
 #   solid on           -> Wi-Fi and inverter both connected
+# The "Status LED" switch in Home Assistant turns it off entirely.
 output:
   - platform: gpio
     id: status_led_out
@@ -130,7 +131,9 @@ interval:
           static uint8_t tick = 0;
           tick = (tick + 1) % 10;
           bool on;
-          if (!wifi::global_wifi_component->is_connected()) {
+          if (!id(status_led_enabled).state) {
+            on = false;
+          } else if (!wifi::global_wifi_component->is_connected()) {
             on = (tick % 2) == 0;
           } else if (!id(inverter_connected).state) {
             on = tick < 5;
@@ -141,3 +144,14 @@ interval:
             id(status_led_out).turn_on();
           else
             id(status_led_out).turn_off();
+
+switch:
+  - platform: template
+    id: status_led_enabled
+    name: "Status LED"
+    icon: mdi:led-on
+    entity_category: config
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    on_turn_off:
+      - output.turn_off: status_led_out

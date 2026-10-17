@@ -415,7 +415,12 @@ void SmaBluetooth::handle_bt_events_() {
     }
   }
   if (this->ev_closed_.exchange(false) && this->state_ != State::IDLE) {
-    ESP_LOGW(TAG, "Bluetooth connection closed by inverter");
+    if (this->state_ == State::CONNECTING) {
+      // Bluedroid reports a failed page as a close; usually out of range or inverter asleep.
+      ESP_LOGW(TAG, "Inverter not reachable over Bluetooth, retrying in %" PRIu32 " s", this->reconnect_interval_ / 1000);
+    } else {
+      ESP_LOGW(TAG, "Bluetooth connection closed by inverter");
+    }
     this->on_disconnected_();
   }
 }

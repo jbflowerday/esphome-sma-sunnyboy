@@ -1,0 +1,112 @@
+substitutions:
+  name: sma-sunnyboy
+  friendly_name: SMA Sunny Boy
+  # Bluetooth address of the inverter (shown in Sunny Explorer, or `hcitool scan`,
+  # or on the type label as "BT MAC"). SMA addresses start with 00:80:25.
+  inverter_mac: "00:80:25:00:00:00"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  # Must be an original ESP32 – the S2/S3/C3/C6 variants have no Bluetooth Classic.
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+external_components:
+  - source:
+      type: local
+      path: components
+    # Or straight from GitHub once you have pushed this repo:
+    # source: github://<you>/esphome-sma-sunnyboy
+    components: [sma_bluetooth]
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${name} fallback"
+    password: !secret fallback_password
+
+captive_portal:
+
+time:
+  - platform: homeassistant
+
+sma_bluetooth:
+  mac_address: ${inverter_mac}
+  password: !secret sma_password   # "User" password, default 0000
+  user_group: user
+  update_interval: 30s
+  reconnect_interval: 60s          # inverter switches Bluetooth off at night
+  zero_when_offline: true          # report 0 W instead of "unavailable" at night
+
+sensor:
+  - platform: sma_bluetooth
+    ac_power:
+      name: "AC Power"
+    ac_voltage:
+      name: "AC Voltage"
+    ac_current:
+      name: "AC Current"
+    grid_frequency:
+      name: "Grid Frequency"
+    dc_power:
+      name: "DC Power"
+    dc_power_a:
+      name: "DC Power A"
+    dc_voltage_a:
+      name: "DC Voltage A"
+    dc_current_a:
+      name: "DC Current A"
+    dc_power_b:
+      name: "DC Power B"
+    dc_voltage_b:
+      name: "DC Voltage B"
+    dc_current_b:
+      name: "DC Current B"
+    energy_today:
+      name: "Energy Today"
+    energy_total:
+      name: "Energy Total"
+    operating_time:
+      name: "Operating Time"
+    feed_in_time:
+      name: "Feed-in Time"
+    temperature:
+      name: "Inverter Temperature"
+    bluetooth_signal:
+      name: "Bluetooth Signal"
+
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    update_interval: 60s
+
+text_sensor:
+  - platform: sma_bluetooth
+    device_status:
+      name: "Status"
+    grid_relay:
+      name: "Grid Relay"
+    device_name:
+      name: "Device Name"
+    serial_number:
+      name: "Serial Number"
+    software_version:
+      name: "Firmware Version"
+
+binary_sensor:
+  - platform: sma_bluetooth
+    connected:
+      name: "Inverter Connected"
